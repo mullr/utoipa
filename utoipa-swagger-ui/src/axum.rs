@@ -9,7 +9,7 @@ use axum::{
 
 use crate::{Config, SwaggerUi, Url};
 
-impl<B> From<SwaggerUi> for Router<B>
+impl<B> From<SwaggerUi> for Router<(), B>
 where
     B: HttpBody + Send + 'static,
 {
@@ -17,7 +17,10 @@ where
         let urls_capacity = swagger_ui.urls.len();
 
         let (router, urls) = swagger_ui.urls.into_iter().fold(
-            (Router::<B>::new(), Vec::<Url>::with_capacity(urls_capacity)),
+            (
+                Router::<(), B>::new(),
+                Vec::<Url>::with_capacity(urls_capacity),
+            ),
             |(router, mut urls), url| {
                 let (url, openapi) = url;
                 (
@@ -39,18 +42,29 @@ where
             Config::new(urls)
         };
 
-        router.route(
-            swagger_ui.path.as_ref(),
-            routing::get(serve_swagger_ui).layer(Extension(Arc::new(config))),
-        )
+        let path_no_slash = swagger_ui.path.trim_end_matches('/');
+
+        router
+            .route(
+                &format!("{path_no_slash}/*tail"),
+                routing::get(serve_swagger_ui),
+            )
+            .route(path_no_slash, routing::get(serve_swagger_ui))
+            .route(&format!("{path_no_slash}/"), routing::get(serve_swagger_ui))
+            .layer(Extension(Arc::new(config)))
     }
 }
 
 async fn serve_swagger_ui(
-    Path(tail): Path<String>,
+    tail: Option<Path<String>>,
     Extension(state): Extension<Arc<Config<'static>>>,
 ) -> impl IntoResponse {
-    match super::serve(&tail[1..], state) {
+    let sub_path = match &tail {
+        None => "",
+        Some(tail) => tail.as_str(),
+    };
+
+    match super::serve(sub_path, state) {
         Ok(file) => file
             .map(|file| {
                 (

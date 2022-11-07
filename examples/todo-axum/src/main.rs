@@ -49,7 +49,7 @@ async fn main() -> Result<(), Error> {
 
     let store = Arc::new(Store::default());
     let app = Router::new()
-        .merge(SwaggerUi::new("/swagger-ui/*tail").url("/api-doc/openapi.json", ApiDoc::openapi()))
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))
         .route(
             "/todo",
             routing::get(todo::list_todos).post(todo::create_todo),
@@ -61,7 +61,7 @@ async fn main() -> Result<(), Error> {
         )
         .layer(Extension(store));
 
-    let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8080));
+    let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8082));
     Server::bind(&address).serve(app.into_make_service()).await
 }
 
@@ -173,8 +173,8 @@ mod todo {
         )
     )]
     pub(super) async fn create_todo(
-        Json(todo): Json<Todo>,
         Extension(store): Extension<Arc<Store>>,
+        Json(todo): Json<Todo>,
     ) -> impl IntoResponse {
         let mut todos = store.lock().await;
 
