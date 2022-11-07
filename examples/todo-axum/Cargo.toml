@@ -11,7 +11,7 @@ authors = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { git = "https://github.com/tokio-rs/axum.git", ref = "944f388ae0f54607902f8cd9b8279ec53c46862c" }
+axum = { git = "https://github.com/tokio-rs/axum.git", rev = "944f388ae0f54607902f8cd9b8279ec53c46862c" }
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1.17", features = ["full"] }
 tower = "0.4"
